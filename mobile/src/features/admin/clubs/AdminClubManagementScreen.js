@@ -36,3 +36,7 @@ const getTimeAgo = (dateStr) => {
     if (hrs < 24) return `${hrs}h ago`;
     return `${Math.floor(hrs / 24)}d ago`;
 };
+const AdminClubManagementScreen = ({ navigation }) => {
+    const { token } = useContext(AuthContext);
+    const [activeTab, setActiveTab] = useState('add');
+}
