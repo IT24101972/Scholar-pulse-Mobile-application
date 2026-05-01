@@ -186,4 +186,33 @@ const getTimeAgo = (dateStr) => {
             { text: 'Cancel', style: 'cancel' }
         ]);
     };
+
+        const handleRemoveMember = (clubId, userId, memberName) => {
+        Alert.alert(`Remove ${memberName}?`, 'This will remove them from the club.', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Remove', style: 'destructive', onPress: async () => {
+                try {
+                    await axios.delete(`${BASE_URL}/clubs/${clubId}/members/${userId}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    setMembers(prev => prev.filter(m => m.user?._id !== userId));
+                } catch { Alert.alert('Error', 'Failed to remove member'); }
+            }}
+        ]);
+    };
+
+    const prepareEdit = (club) => {
+        setEditingId(club._id);
+        setIsEditing(true);
+        setFormData({ name: club.name, description: club.description, category: club.category });
+        setSelectedLogo(club.logo || null);
+        setActiveTab('add');
+    };
+
+    const resetForm = () => {
+        setFormData(EMPTY_FORM);
+        setSelectedLogo(null);
+        setIsEditing(false);
+        setEditingId(null);
+    };
 }
