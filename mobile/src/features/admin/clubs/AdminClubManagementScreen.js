@@ -36,7 +36,42 @@ const getTimeAgo = (dateStr) => {
     if (hrs < 24) return `${hrs}h ago`;
     return `${Math.floor(hrs / 24)}d ago`;
 };
-const AdminClubManagementScreen = ({ navigation }) => {
+
+   const AdminClubManagementScreen = ({ navigation }) => {
     const { token } = useContext(AuthContext);
-    const [activeTab, setActiveTab] = useState('add');
+    const [activeTab, setActiveTab] = useState('add'); // 'add' | 'manage' | 'requests'
+    const [isLoading, setIsLoading] = useState(false);
+    const [clubs,     setClubs]     = useState([]);
+    const [requests,  setRequests]  = useState([]);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedLogo, setSelectedLogo] = useState(null);
+
+    // Request detail modal
+    const [selectedRequest,   setSelectedRequest]   = useState(null);
+    const [detailModalVisible, setDetailModalVisible] = useState(false);
+
+    // Selected club for member management
+    const [selectedClub,   setSelectedClub]   = useState(null);
+    const [members,        setMembers]         = useState([]);
+    const [showMembersFor, setShowMembersFor]  = useState(null);
+
+    const EMPTY_FORM = { name: '', description: '', category: 'Academic' };
+    const [formData, setFormData] = useState(EMPTY_FORM);
+
+    useEffect(() => {
+        if (activeTab === 'manage') fetchClubs();
+        if (activeTab === 'requests') fetchRequests();
+    }, [activeTab]);
+
+    /* ── Helpers ────────────────────────────────────────────────────── */
+    const pickLogo = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') { Alert.alert('Permission Denied', 'Camera roll access is needed.'); return; }
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1,
+        });
+        if (!result.canceled) setSelectedLogo(result.assets[0].uri);
+    };
 }
