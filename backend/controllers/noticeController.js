@@ -131,6 +131,7 @@ exports.updateNotice = async (req, res) => {
     }
 };
 
+
 // @desc    Delete a notice
 // @route   DELETE /api/notices/:id
 // @access  Private/Admin
@@ -156,3 +157,7 @@ exports.deleteNotice = async (req, res) => {
         res.status(500).json({ status: 'error', message: error.message });
     }
 };
+
+
+
+
