@@ -417,6 +417,235 @@ function ClubCard({ club, onPress, onJoin }) {
     );
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN SCREEN
+════════════════════════════════════════════════════════════════════ */
+
+export default function ClubsScreen() {
+    const { token } = useContext(AuthContext);
+    const [clubs,        setClubs]        = useState([]);
+    const [isLoading,    setIsLoading]    = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [activeCategory, setActiveCategory] = useState('All');
+    const [selectedClub,   setSelectedClub]   = useState(null);
+    const [detailVisible,  setDetailVisible]  = useState(false);
+    const [joinVisible,    setJoinVisible]    = useState(false);
+    const [joiningClub,    setJoiningClub]    = useState(null);
+    const [useFallback,    setUseFallback]    = useState(false);
+
+    const fetchClubs = useCallback(async (refresh = false) => {
+        if (refresh) setIsRefreshing(true);
+        else setIsLoading(true);
+        try {
+            const res = await axios.get(`${BASE_URL}/clubs`, {
+                headers: { Authorization: `Bearer ${token}` },
+                timeout: 8000
+            });
+            setClubs(res.data.data || []);
+            setUseFallback(false);
+        } catch {
+            setClubs(FALLBACK_CLUBS);
+            setUseFallback(true);
+        } finally {
+            setIsLoading(false);
+            setIsRefreshing(false);
+        }
+    }, [token]);
+
+    useEffect(() => { fetchClubs(); }, [fetchClubs]);
+
+    // Open the join request form
+    const openJoinForm = (club) => {
+        setJoiningClub(club);
+        setJoinVisible(true);
+    };
+
+    const handleJoinSuccess = (clubId, clubName) => {
+        setJoinVisible(false);
+        setJoiningClub(null);
+
+        // Optimistically flip the button to "Pending" immediately
+        setClubs(prev => prev.map(c =>
+            c._id === clubId
+                ? { ...c, myMembership: { status: 'pending', role: 'member' } }
+                : c
+        ));
+
+        Alert.alert(
+            '✅ Request Sent!',
+            `Your join request for "${clubName}" has been submitted. The club admin will review and respond shortly.`,
+            [{ text: 'Got it', onPress: () => fetchClubs(true) }]
+        );
+    };
+
+    const handleLeave = (club) => {
+        Alert.alert(`Leave ${club.name}?`, 'You will need to re-apply to rejoin.', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Leave', style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await axios.delete(`${BASE_URL}/clubs/${club._id}/leave`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        Alert.alert('Left Club', `You have left ${club.name}.`);
+                        fetchClubs(true);
+                    } catch (e) {
+                        Alert.alert('Error', e.response?.data?.message || 'Failed to leave club');
+                    }
+                }
+            }
+        ]);
+    };
+
+    const handleCardPress = async (club) => {
+        try {
+            const res = await axios.get(`${BASE_URL}/clubs/${club._id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setSelectedClub(res.data.data);
+        } catch {
+            setSelectedClub(club);
+        }
+        setDetailVisible(true);
+    };
+
+    const filtered = activeCategory === 'All' ? clubs : clubs.filter(c => c.category === activeCategory);
+    const myClubs  = clubs.filter(c => c.myMembership?.status === 'approved');
+
+    return (
+        <View style={styles.container}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefreshing}
+                        onRefresh={() => fetchClubs(true)}
+                        colors={[theme.colors.primary]}
+                        tintColor={theme.colors.primary}
+                    />
+                }
+            >
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.headerSub}>CAMPUS LIFE</Text>
+                    <Text style={styles.headerTitle}>Clubs &</Text>
+                    <Text style={styles.headerTitle}>Networks</Text>
+                    <Text style={styles.headerDesc}>Discover communities and be part of something bigger</Text>
+                </View>
+
+                {useFallback && (
+                    <View style={styles.offlineBanner}>
+                        <Ionicons name="cloud-offline-outline" size={14} color="#F59E0B" />
+                        <Text style={styles.offlineText}>Showing sample clubs (offline)</Text>
+                    </View>
+                )}
+
+                {/* My Clubs strip */}
+                {myClubs.length > 0 && (
+                    <View style={styles.myClubsSection}>
+                        <Text style={styles.sectionTitle}>My Clubs</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingLeft: 20 }}>
+                            {myClubs.map(club => {
+                                const color   = CATEGORY_COLORS[club.category] || '#6B7280';
+                                const icon    = CATEGORY_ICONS[club.category]  || 'ellipse-outline';
+                                const logoUri = getLogoUrl(club.logo);
+                                return (
+                                    <TouchableOpacity key={club._id} style={styles.myClubChip} onPress={() => handleCardPress(club)}>
+                                        <View style={[styles.myClubLogo, { backgroundColor: color + '20' }]}>
+                                            {logoUri
+                                                ? <Image source={{ uri: logoUri }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                                                : <Ionicons name={icon} size={20} color={color} />
+                                            }
+                                        </View>
+                                        <Text style={styles.myClubName} numberOfLines={1}>{club.name}</Text>
+                                        <View style={[styles.myClubRole, { backgroundColor: ROLE_COLORS[club.myMembership.role] + '20' }]}>
+                                            <Text style={[styles.myClubRoleText, { color: ROLE_COLORS[club.myMembership.role] }]}>
+                                                {club.myMembership.role}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                )}
+
+                {/* Category filter */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                    {CATEGORIES.map(cat => {
+                        const isActive = activeCategory === cat;
+                        const col = cat === 'All' ? theme.colors.primary : CATEGORY_COLORS[cat] || '#6B7280';
+                        return (
+                            <TouchableOpacity
+                                key={cat}
+                                style={[styles.filterChip, isActive && { backgroundColor: col, borderColor: col }]}
+                                onPress={() => setActiveCategory(cat)}
+                            >
+                                {cat !== 'All' && (
+                                    <Ionicons name={CATEGORY_ICONS[cat] || 'ellipse'} size={13} color={isActive ? '#FFF' : col} style={{ marginRight: 4 }} />
+                                )}
+                                <Text style={[styles.filterText, isActive && { color: '#FFF', fontWeight: '700' }]}>{cat}</Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
+
+                {/* List header */}
+                <View style={styles.listHeader}>
+                    <Text style={styles.sectionTitle}>
+                        {activeCategory === 'All' ? 'All Clubs' : `${activeCategory} Clubs`}
+                    </Text>
+                    <View style={styles.countBadge}>
+                        <Text style={styles.countText}>{filtered.length}</Text>
+                    </View>
+                </View>
+
+                {/* Club list */}
+                {isLoading ? (
+                    <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 40 }} />
+                ) : filtered.length > 0 ? (
+                    filtered.map(club => (
+                        <ClubCard
+                            key={club._id}
+                            club={club}
+                            onPress={handleCardPress}
+                            onJoin={openJoinForm}
+                        />
+                    ))
+                ) : (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="people-outline" size={60} color="#E5E7EB" />
+                        <Text style={styles.emptyTitle}>No clubs yet</Text>
+                        <Text style={styles.emptyDesc}>
+                            No {activeCategory !== 'All' ? activeCategory + ' ' : ''}clubs found.
+                        </Text>
+                    </View>
+                )}
+
+                <View style={{ height: 130 }} />
+            </ScrollView>
+
+            {/* Club Detail Modal */}
+            <ClubDetailModal
+                club={selectedClub}
+                visible={detailVisible}
+                onClose={() => setDetailVisible(false)}
+                onJoin={openJoinForm}
+                onLeave={handleLeave}
+            />
+
+            {/* Join Request Form Modal */}
+            <JoinRequestModal
+                club={joiningClub}
+                visible={joinVisible}
+                onClose={() => { setJoinVisible(false); setJoiningClub(null); }}
+                onSuccess={handleJoinSuccess}
+                token={token}
+            />
+        </View>
+    );
+}
 
 
 /* ═══════════════════════════════════════════════════════════════════
