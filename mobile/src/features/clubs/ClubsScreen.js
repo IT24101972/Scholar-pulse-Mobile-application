@@ -245,6 +245,178 @@ function JoinRequestModal({ club, visible, onClose, onSuccess, token }) {
     );
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   CLUB DETAIL MODAL
+════════════════════════════════════════════════════════════════════ */
+function ClubDetailModal({ club, visible, onClose, onJoin, onLeave }) {
+    if (!club) return null;
+    const cat     = club.category;
+    const color   = CATEGORY_COLORS[cat] || '#6B7280';
+    const icon    = CATEGORY_ICONS[cat]  || 'ellipse-outline';
+    const ms      = club.myMembership;
+    const logoUri = getLogoUrl(club.logo);
+
+    return (
+        <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen">
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalSheet}>
+                    <LinearGradient colors={[color + '22', '#F9FAFB']} style={styles.modalGradient}>
+                        <TouchableOpacity style={styles.modalCloseBtn} onPress={onClose}>
+                            <Ionicons name="chevron-down" size={22} color="#6B7280" />
+                        </TouchableOpacity>
+                        <View style={[styles.modalLogo, { backgroundColor: color + '20' }]}>
+                            {logoUri
+                                ? <Image source={{ uri: logoUri }} style={{ width: '100%', height: '100%', borderRadius: 24 }} />
+                                : <Ionicons name={icon} size={44} color={color} />
+                            }
+                        </View>
+                        <View style={[styles.modalCatBadge, { backgroundColor: color }]}>
+                            <Text style={styles.modalCatText}>{cat}</Text>
+                        </View>
+                        <Text style={styles.modalTitle}>{club.name}</Text>
+                    </LinearGradient>
+
+                    <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                        <View style={styles.statsRow}>
+                            <View style={styles.statBox}>
+                                <Text style={styles.statNum}>{club.memberCount}</Text>
+                                <Text style={styles.statLabel}>Members</Text>
+                            </View>
+                            <View style={[styles.statBox, styles.statBoxMid]}>
+                                <Ionicons name="checkmark-circle" size={22} color="#10B981" />
+                                <Text style={[styles.statLabel, { marginTop: 4 }]}>Active</Text>
+                            </View>
+                            {ms?.status === 'approved' && (
+                                <View style={styles.statBox}>
+                                    <Ionicons name={ROLE_ICONS[ms.role] || 'person-circle'} size={22} color={ROLE_COLORS[ms.role] || '#0055FE'} />
+                                    <Text style={[styles.statLabel, { marginTop: 4, textTransform: 'capitalize' }]}>{ms.role}</Text>
+                                </View>
+                            )}
+                        </View>
+
+                        <Text style={styles.sectionLabel}>About</Text>
+                        <Text style={styles.modalDesc}>{club.description}</Text>
+
+                        {club.members && club.members.length > 0 && (
+                            <>
+                                <Text style={styles.sectionLabel}>Members</Text>
+                                {club.members.slice(0, 5).map(m => (
+                                    <View key={m._id} style={styles.memberRow}>
+                                        <View style={[styles.memberAvatar, { backgroundColor: (ROLE_COLORS[m.roleInClub] || '#6B7280') + '20' }]}>
+                                            <Ionicons name={ROLE_ICONS[m.roleInClub] || 'person'} size={18} color={ROLE_COLORS[m.roleInClub] || '#6B7280'} />
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.memberName}>{m.user?.fullName || 'Unknown'}</Text>
+                                            <Text style={styles.memberRole}>{m.roleInClub}</Text>
+                                        </View>
+                                    </View>
+                                ))}
+                            </>
+                        )}
+                        <View style={{ height: 30 }} />
+                    </ScrollView>
+
+                    <View style={styles.modalFooter}>
+                        {!ms && (
+                            <TouchableOpacity
+                                style={[styles.primaryActionBtn, { backgroundColor: color }]}
+                                onPress={() => { onClose(); onJoin(club); }}
+                            >
+                                <Ionicons name="add-circle-outline" size={20} color="#FFF" style={{ marginRight: 8 }} />
+                                <Text style={styles.primaryActionText}>Request to Join</Text>
+                            </TouchableOpacity>
+                        )}
+                        {ms?.status === 'pending' && (
+                            <View style={[styles.primaryActionBtn, { backgroundColor: '#FEF3C7' }]}>
+                                <Ionicons name="time-outline" size={20} color="#D97706" style={{ marginRight: 8 }} />
+                                <Text style={[styles.primaryActionText, { color: '#D97706' }]}>Request Pending…</Text>
+                            </View>
+                        )}
+                        {ms?.status === 'approved' && (
+                            <TouchableOpacity
+                                style={[styles.primaryActionBtn, { backgroundColor: '#FEF2F2', borderWidth: 1.5, borderColor: '#FECACA' }]}
+                                onPress={() => { onLeave(club); onClose(); }}
+                            >
+                                <Ionicons name="exit-outline" size={20} color="#EF4444" style={{ marginRight: 8 }} />
+                                <Text style={[styles.primaryActionText, { color: '#EF4444' }]}>Leave Club</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+            </View>
+        </Modal>
+    );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CLUB CARD
+════════════════════════════════════════════════════════════════════ */
+function ClubCard({ club, onPress, onJoin }) {
+    const cat     = club.category;
+    const color   = CATEGORY_COLORS[cat] || '#6B7280';
+    const icon    = CATEGORY_ICONS[cat]  || 'ellipse-outline';
+    const ms      = club.myMembership;
+    const logoUri = getLogoUrl(club.logo);
+
+    const getActionBtn = () => {
+        if (!ms) {
+            return (
+                <TouchableOpacity
+                    style={[styles.joinBtn, { backgroundColor: color }]}
+                    onPress={(e) => { e.stopPropagation?.(); onJoin(club); }}
+                >
+                    <Ionicons name="add" size={14} color="#FFF" />
+                    <Text style={styles.joinBtnText}>Join</Text>
+                </TouchableOpacity>
+            );
+        }
+        if (ms.status === 'pending') {
+            return (
+                <View style={[styles.statusPill, { backgroundColor: '#FEF3C7' }]}>
+                    <Ionicons name="time-outline" size={13} color="#D97706" />
+                    <Text style={[styles.statusPillText, { color: '#D97706' }]}>Pending</Text>
+                </View>
+            );
+        }
+        if (ms.status === 'approved') {
+            return (
+                <View style={[styles.statusPill, { backgroundColor: '#ECFDF5' }]}>
+                    <Ionicons name={ROLE_ICONS[ms.role] || 'checkmark-circle'} size={13} color="#059669" />
+                    <Text style={[styles.statusPillText, { color: '#059669' }]}>
+                        {ms.role ? ms.role.charAt(0).toUpperCase() + ms.role.slice(1) : 'Member'}
+                    </Text>
+                </View>
+            );
+        }
+        return null;
+    };
+
+    return (
+        <TouchableOpacity style={styles.clubCard} onPress={() => onPress(club)} activeOpacity={0.85}>
+            <View style={[styles.logoContainer, { backgroundColor: color + '15' }]}>
+                {logoUri
+                    ? <Image source={{ uri: logoUri }} style={styles.logoImage} />
+                    : <Ionicons name={icon} size={32} color={color} />
+                }
+            </View>
+            <View style={styles.cardInfo}>
+                <View style={styles.cardTopRow}>
+                    <View style={[styles.catBadge, { backgroundColor: color + '15' }]}>
+                        <Text style={[styles.catBadgeText, { color }]}>{cat}</Text>
+                    </View>
+                    {getActionBtn()}
+                </View>
+                <Text style={styles.clubName} numberOfLines={1}>{club.name}</Text>
+                <Text style={styles.clubDesc} numberOfLines={2}>{club.description}</Text>
+                <View style={styles.cardFooter}>
+                    <Ionicons name="people-outline" size={13} color={theme.colors.textSub} />
+                    <Text style={styles.memberCount}>{club.memberCount} members</Text>
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+}
+
 
 
 /* ═══════════════════════════════════════════════════════════════════
