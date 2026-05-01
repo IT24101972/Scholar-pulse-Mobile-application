@@ -11,6 +11,239 @@ import { theme } from '../../theme/theme';
 import { AuthContext } from '../../context/AuthContext';
 import { BASE_URL } from '../../config/api';
 
+/* ── Constants ──────────────────────────────────────────────────────── */
+const CATEGORIES = ['All', 'Academic', 'Sports', 'Arts', 'Technology', 'Community', 'Cultural', 'Other'];
+
+const CATEGORY_COLORS = {
+    Academic: '#6366F1', Sports: '#10B981', Arts: '#EC4899',
+    Technology: '#0055FE', Community: '#F59E0B', Cultural: '#8B5CF6', Other: '#6B7280',
+};
+
+const CATEGORY_ICONS = {
+    Academic: 'school-outline', Sports: 'fitness-outline', Arts: 'color-palette-outline',
+    Technology: 'desktop-outline', Community: 'people-outline',
+    Cultural: 'globe-outline', Other: 'ellipsis-horizontal-circle-outline',
+};
+
+const ROLE_COLORS = { leader: '#F59E0B', moderator: '#6366F1', member: '#10B981' };
+const ROLE_ICONS  = { leader: 'ribbon', moderator: 'shield-checkmark', member: 'person-circle' };
+
+const YEAR_OPTIONS = ['1st Year', '2nd Year', '3rd Year', '4th Year', 'Postgraduate'];
+
+const FALLBACK_CLUBS = [
+    { _id: 'f1', name: 'IEEE Student Branch', category: 'Technology', description: 'Connecting engineering students with the global IEEE community through workshops, seminars, and competitions.', memberCount: 84, logo: '', myMembership: null, isActive: true },
+    { _id: 'f2', name: 'Leo Club', category: 'Community', description: 'A service-oriented club empowering youth to volunteer and make a positive impact in the community.', memberCount: 120, logo: '', myMembership: null, isActive: true },
+    { _id: 'f3', name: 'Drama Circle', category: 'Arts', description: 'Explore the world of theatre, acting, and creative storytelling with fellow drama enthusiasts.', memberCount: 45, logo: '', myMembership: null, isActive: true },
+    { _id: 'f4', name: 'Badminton Club', category: 'Sports', description: 'Weekly training sessions and inter-university tournaments for badminton players of all skill levels.', memberCount: 67, logo: '', myMembership: null, isActive: true },
+];
+
+const getLogoUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('file')) return url;
+    return `${BASE_URL.replace('/api', '')}${url}`;
+};
+
+function JoinRequestModal({ club, visible, onClose, onSuccess, token }) {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [form, setForm] = useState({
+        fullName:   '',
+        studentId:  '',
+        faculty:    '',
+        year:       '',
+        whyJoin:    '',
+        skills:     '',
+    });
+
+    const color   = CATEGORY_COLORS[club?.category] || '#6B7280';
+    const icon    = CATEGORY_ICONS[club?.category]  || 'people-outline';
+    const logoUri = getLogoUrl(club?.logo);
+
+    const resetForm = () => setForm({ fullName: '', studentId: '', faculty: '', year: '', whyJoin: '', skills: '' });
+
+    const handleClose = () => { resetForm(); onClose(); };
+
+    const handleSubmit = async () => {
+        if (!form.fullName.trim() || !form.studentId.trim() || !form.faculty.trim() || !form.year || !form.whyJoin.trim()) {
+            Alert.alert('Incomplete Form', 'Please fill in all required fields (*).');
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            await axios.post(`${BASE_URL}/clubs/${club._id}/join`, {
+                applicantName:  form.fullName.trim(),
+                studentId:      form.studentId.trim(),
+                faculty:        form.faculty.trim(),
+                year:           form.year,
+                whyJoin:        form.whyJoin.trim(),
+                skills:         form.skills.trim(),
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            resetForm();
+            onSuccess(club._id, club.name);
+        } catch (e) {
+            Alert.alert('Error', e.response?.data?.message || 'Failed to submit request. Try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (!club) return null;
+
+    return (
+        <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen">
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+                <View style={jStyles.overlay}>
+                    <View style={jStyles.sheet}>
+
+                        {/* Drag handle + close */}
+                        <View style={jStyles.topBar}>
+                            <View style={jStyles.dragHandle} />
+                            <TouchableOpacity style={jStyles.closeX} onPress={handleClose}>
+                                <Ionicons name="close" size={20} color="#6B7280" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+                            {/* Club header */}
+                            <View style={jStyles.clubHeader}>
+                                <View style={[jStyles.clubLogo, { backgroundColor: color + '18' }]}>
+                                    {logoUri
+                                        ? <Image source={{ uri: logoUri }} style={{ width: '100%', height: '100%', borderRadius: 18 }} />
+                                        : <Ionicons name={icon} size={28} color={color} />
+                                    }
+                                </View>
+                                <View style={{ flex: 1, marginLeft: 14 }}>
+                                    <View style={[jStyles.catPill, { backgroundColor: color + '18' }]}>
+                                        <Text style={[jStyles.catPillText, { color }]}>{club.category}</Text>
+                                    </View>
+                                    <Text style={jStyles.clubTitle} numberOfLines={1}>{club.name}</Text>
+                                    <View style={jStyles.memberRow}>
+                                        <Ionicons name="people-outline" size={12} color="#9CA3AF" />
+                                        <Text style={jStyles.memberText}>{club.memberCount} members</Text>
+                                    </View>
+                                </View>
+                            </View>
+
+                            {/* Info banner */}
+                            <View style={[jStyles.infoBanner, { borderLeftColor: color }]}>
+                                <Ionicons name="information-circle-outline" size={16} color={color} />
+                                <Text style={jStyles.infoText}>
+                                    Fill in this form to send a join request. The club admin will review and approve it.
+                                </Text>
+                            </View>
+
+                            {/* ── Form Fields ── */}
+                            <Text style={jStyles.sectionLabel}>Personal Information</Text>
+
+                            {/* Full Name */}
+                            <Text style={jStyles.label}>Full Name <Text style={jStyles.req}>*</Text></Text>
+                            <TextInput
+                                style={jStyles.input}
+                                placeholder="Your full name"
+                                placeholderTextColor="#9CA3AF"
+                                value={form.fullName}
+                                onChangeText={v => setForm({ ...form, fullName: v })}
+                            />
+
+                            {/* Student ID */}
+                            <Text style={jStyles.label}>Student ID <Text style={jStyles.req}>*</Text></Text>
+                            <TextInput
+                                style={jStyles.input}
+                                placeholder="e.g. SE/2021/001"
+                                placeholderTextColor="#9CA3AF"
+                                autoCapitalize="characters"
+                                value={form.studentId}
+                                onChangeText={v => setForm({ ...form, studentId: v })}
+                            />
+
+                            {/* Faculty */}
+                            <Text style={jStyles.label}>Faculty / Department <Text style={jStyles.req}>*</Text></Text>
+                            <TextInput
+                                style={jStyles.input}
+                                placeholder="e.g. Computing, Business, Engineering"
+                                placeholderTextColor="#9CA3AF"
+                                value={form.faculty}
+                                onChangeText={v => setForm({ ...form, faculty: v })}
+                            />
+
+                            {/* Year */}
+                            <Text style={jStyles.label}>Academic Year <Text style={jStyles.req}>*</Text></Text>
+                            <View style={jStyles.pillRow}>
+                                {YEAR_OPTIONS.map(yr => {
+                                    const active = form.year === yr;
+                                    return (
+                                        <TouchableOpacity
+                                            key={yr}
+                                            style={[jStyles.yearPill, active && { backgroundColor: color, borderColor: color }]}
+                                            onPress={() => setForm({ ...form, year: yr })}
+                                        >
+                                            <Text style={[jStyles.yearPillText, active && { color: '#FFF' }]}>{yr}</Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+
+                            <Text style={jStyles.sectionLabel}>About You</Text>
+
+                            {/* Why Join */}
+                            <Text style={jStyles.label}>Why do you want to join? <Text style={jStyles.req}>*</Text></Text>
+                            <TextInput
+                                style={[jStyles.input, jStyles.textArea]}
+                                placeholder="Tell us your motivation for joining this club…"
+                                placeholderTextColor="#9CA3AF"
+                                multiline
+                                numberOfLines={4}
+                                value={form.whyJoin}
+                                onChangeText={v => setForm({ ...form, whyJoin: v })}
+                            />
+                            <Text style={jStyles.charCount}>{form.whyJoin.length} / 300 characters</Text>
+
+                            {/* Skills */}
+                            <Text style={jStyles.label}>Relevant Skills / Experience <Text style={jStyles.optional}>(optional)</Text></Text>
+                            <TextInput
+                                style={[jStyles.input, jStyles.textAreaSm]}
+                                placeholder="Any skills, experience, or achievements relevant to this club…"
+                                placeholderTextColor="#9CA3AF"
+                                multiline
+                                numberOfLines={3}
+                                value={form.skills}
+                                onChangeText={v => setForm({ ...form, skills: v })}
+                            />
+
+                            <View style={{ height: 12 }} />
+                        </ScrollView>
+
+                        {/* Submit */}
+                        <View style={jStyles.footer}>
+                            <TouchableOpacity style={jStyles.cancelBtn} onPress={handleClose}>
+                                <Text style={jStyles.cancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[jStyles.submitBtn, { backgroundColor: color }, isSubmitting && { opacity: 0.7 }]}
+                                onPress={handleSubmit}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting
+                                    ? <ActivityIndicator color="#FFF" size="small" />
+                                    : <>
+                                        <Ionicons name="paper-plane-outline" size={16} color="#FFF" style={{ marginRight: 6 }} />
+                                        <Text style={jStyles.submitText}>Send Request</Text>
+                                      </>
+                                }
+                            </TouchableOpacity>
+                        </View>
+
+                    </View>
+                </View>
+            </KeyboardAvoidingView>
+        </Modal>
+    );
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    STYLES
