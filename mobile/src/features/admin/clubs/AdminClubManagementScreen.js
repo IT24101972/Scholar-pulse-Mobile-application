@@ -74,4 +74,116 @@ const getTimeAgo = (dateStr) => {
         });
         if (!result.canceled) setSelectedLogo(result.assets[0].uri);
     };
+
+      /* ── API ────────────────────────────────────────────────────────── */
+    const fetchClubs = async () => {
+        setIsLoading(true);
+        try {
+            const res = await axios.get(`${BASE_URL}/clubs/admin/all`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setClubs(res.data.data || []);
+        } catch { Alert.alert('Error', 'Could not load clubs'); }
+        finally { setIsLoading(false); }
+    };
+
+    const fetchRequests = async () => {
+        setIsLoading(true);
+        try {
+            const res = await axios.get(`${BASE_URL}/clubs/requests`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setRequests(res.data.data || []);
+        } catch { Alert.alert('Error', 'Could not load requests'); }
+        finally { setIsLoading(false); }
+    };
+
+    const fetchMembers = async (clubId) => {
+        setIsLoading(true);
+        try {
+            const res = await axios.get(`${BASE_URL}/clubs/${clubId}/members`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setMembers(res.data.data || []);
+        } catch { Alert.alert('Error', 'Could not load members'); }
+        finally { setIsLoading(false); }
+    };
+
+    const handleSave = async () => {
+        if (!formData.name.trim() || !formData.description.trim()) {
+            Alert.alert('Error', 'Name and Description are required');
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const fData = new FormData();
+            fData.append('name', formData.name.trim());
+            fData.append('description', formData.description.trim());
+            fData.append('category', formData.category);
+
+            if (selectedLogo && selectedLogo.startsWith('file')) {
+                const filename = selectedLogo.split('/').pop();
+                const match = /\.(\w+)$/.exec(filename);
+                fData.append('logo', { uri: selectedLogo, name: filename, type: match ? `image/${match[1]}` : 'image' });
+            } else if (selectedLogo) {
+                fData.append('logo', selectedLogo);
+            }
+
+            const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' };
+
+            if (isEditing) {
+                await axios.put(`${BASE_URL}/clubs/${editingId}`, fData, { headers });
+                Alert.alert('Success', 'Club updated!');
+            } else {
+                await axios.post(`${BASE_URL}/clubs`, fData, { headers });
+                Alert.alert('Success', 'Club created!');
+            }
+            resetForm();
+            setActiveTab('manage');
+        } catch (e) {
+            Alert.alert('Error', e.response?.data?.message || 'Failed to save club');
+        } finally { setIsLoading(false); }
+    };
+
+    const handleDelete = (club) => {
+        Alert.alert(`Delete "${club.name}"?`, 'This will remove all memberships too.', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Delete', style: 'destructive', onPress: async () => {
+                try {
+                    await axios.delete(`${BASE_URL}/clubs/${club._id}`, { headers: { Authorization: `Bearer ${token}` } });
+                    setClubs(prev => prev.filter(c => c._id !== club._id));
+                } catch { Alert.alert('Error', 'Failed to delete club'); }
+            }}
+        ]);
+    };
+
+    const handleRequestAction = async (requestId, action) => {
+        try {
+            await axios.put(`${BASE_URL}/clubs/requests/${requestId}`, { action }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setRequests(prev => prev.filter(r => r._id !== requestId));
+            Alert.alert('Done', action === 'approve' ? 'Member approved!' : 'Request rejected.');
+        } catch (e) {
+            Alert.alert('Error', e.response?.data?.message || 'Failed to handle request');
+        }
+    };
+
+    const handleRoleChange = (clubId, userId, currentRole) => {
+        const roles = ['member', 'moderator', 'leader'];
+        Alert.alert('Change Role', 'Select a new role:', [
+            ...roles.filter(r => r !== currentRole).map(role => ({
+                text: role.charAt(0).toUpperCase() + role.slice(1),
+                onPress: async () => {
+                    try {
+                        await axios.put(`${BASE_URL}/clubs/${clubId}/members/${userId}/role`, { role }, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        setMembers(prev => prev.map(m => m.user?._id === userId ? { ...m, roleInClub: role } : m));
+                    } catch { Alert.alert('Error', 'Failed to update role'); }
+                }
+            })),
+            { text: 'Cancel', style: 'cancel' }
+        ]);
+    };
 }
