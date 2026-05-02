@@ -539,6 +539,50 @@ const styles = StyleSheet.create({
         marginLeft: 5,
     },
     /* Event card image */
+      cardImage: {
+        width: '100%',
+        height: 150,
+        marginTop: -18,
+        marginLeft: -18,
+        marginRight: -18,
+        marginBottom: 0,
+        width: undefined,
+        alignSelf: 'stretch',
+    },
+    badge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    badgeText: {
+        color: theme.colors.white,
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1,
+    },
+    iconBg: {
+        padding: 7,
+        borderRadius: 8,
+    },
+    /* Empty state */
+    emptyState: {
+        alignItems: 'center',
+        marginTop: 60,
+        paddingHorizontal: 40,
+    },
+    emptyTitle: {
+        fontSize: 20,
+        fontWeight: '800',
+        color: theme.colors.textMain,
+        marginTop: 16,
+    },
+    emptyDesc: {
+        fontSize: 14,
+        color: theme.colors.textSub,
+        textAlign: 'center',
+        lineHeight: 21,
+        marginTop: 8,
+    },
 
 
     });
