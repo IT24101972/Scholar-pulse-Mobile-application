@@ -345,3 +345,93 @@ export default function HomeScreen() {
     );
 }
 
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+    },
+    headerSection: {
+        padding: 20,
+        paddingTop: 10,
+    },
+    titleRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 16,
+    },
+    subTitle: {
+        fontSize: 11,
+        fontWeight: 'bold',
+        color: '#3b4382',
+        letterSpacing: 1.2,
+        marginBottom: 4,
+    },
+    mainTitle: {
+        fontSize: 30,
+        fontWeight: '900',
+        color: theme.colors.textMain,
+        lineHeight: 36,
+    },
+    statsBox: {
+        alignItems: 'center',
+        backgroundColor: theme.colors.primaryLight,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 14,
+        marginTop: 4,
+    },
+    statsNum: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: theme.colors.primary,
+    },
+    statsLabel: {
+        fontSize: 10,
+        color: theme.colors.textSub,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    offlineBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FEF3C7',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        marginBottom: 12,
+    },
+    offlineText: {
+        fontSize: 12,
+        color: '#92400E',
+        marginLeft: 6,
+        fontWeight: '600',
+    },
+    filterScroll: {
+        flexDirection: 'row',
+        marginBottom: 5,
+    },
+    filterChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 14,
+        paddingVertical: 9,
+        borderRadius: 20,
+        backgroundColor: theme.colors.white,
+        marginRight: 10,
+        borderWidth: 1.5,
+        borderColor: theme.colors.border,
+    },
+    filterText: {
+        fontSize: 13,
+        color: theme.colors.textSub,
+        fontWeight: '600',
+    },
+    filterTextActive: {
+        color: '#FFF',
+        fontWeight: '700',
+    },
+
+
+    });
