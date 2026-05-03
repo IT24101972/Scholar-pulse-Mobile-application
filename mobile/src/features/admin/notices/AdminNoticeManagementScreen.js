@@ -656,5 +656,43 @@ const styles = StyleSheet.create({
     miniFilterText: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
 
     /* Notice card (manage tab) */
+    noticeCard: {
+        backgroundColor: '#FFF', borderRadius: 20, padding: 16,
+        marginBottom: 16, borderWidth: 1, borderColor: '#F3F4F6',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
+    },
+    noticeCardTop: {
+        flexDirection: 'row', justifyContent: 'space-between',
+        alignItems: 'center', marginBottom: 10,
+    },
+    typeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    typeBadgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+    facBadge:  { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    facBadgeText: { fontSize: 10, fontWeight: '700' },
+    importantDot: {
+        width: 22, height: 22, borderRadius: 11,
+        backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center',
+    },
+    cardActions: { flexDirection: 'row' },
+    miniActionBtn: {
+        width: 34, height: 34, borderRadius: 10,
+        backgroundColor: '#F9FAFB', justifyContent: 'center', alignItems: 'center',
+    },
+    noticeCardTitle: {
+        fontSize: 16, fontWeight: '800', color: '#111827', marginBottom: 5, lineHeight: 22,
+    },
+    noticeCardDesc: {
+        fontSize: 13, color: '#6B7280', lineHeight: 19, marginBottom: 12,
+    },
+    noticeCardFooter: {
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    },
+    attachChip: {
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: '#EEF2FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
+    },
+    attachChipText: { fontSize: 11, fontWeight: '700', color: '#0055FE', marginLeft: 4 },
+    timeText: { fontSize: 11, color: '#9CA3AF', fontWeight: '600' },
 
 });
