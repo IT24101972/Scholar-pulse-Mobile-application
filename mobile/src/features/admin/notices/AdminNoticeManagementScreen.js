@@ -555,3 +555,106 @@ const AdminNoticeManagementScreen = ({ navigation }) => {
         </View>
     );
 };
+/* ── Styles ─────────────────────────────────────────────────────────── */
+const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: '#F9FAFB' },
+
+    /* Header */
+    managementHeader: {
+        paddingTop: 60,
+        paddingHorizontal: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    backBtn: { padding: 4, marginRight: 14 },
+    headerTitle: { fontSize: 20, fontWeight: '800', color: '#1E1B4B' },
+    headerSub:   { fontSize: 12, color: '#6B7280', fontWeight: '500', marginTop: 2 },
+
+    /* Toggle */
+    toggleWrapper:    { paddingHorizontal: 24, marginBottom: 24 },
+    toggleBackground: { flexDirection: 'row', backgroundColor: '#E5E7EB', borderRadius: 16, padding: 4 },
+    toggleOption: {
+        flex: 1, flexDirection: 'row', justifyContent: 'center',
+        alignItems: 'center', paddingVertical: 12, borderRadius: 12,
+    },
+    toggleOptionActive: {
+        backgroundColor: '#FFF',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08, shadowRadius: 4, elevation: 3,
+    },
+    toggleText:       { fontSize: 13, fontWeight: '600', color: '#6B7280' },
+    toggleTextActive: { color: theme.colors.primary, fontWeight: '700' },
+
+    /* Form */
+    formContainer: { paddingHorizontal: 24 },
+    inputLabel: {
+        fontSize: 13, fontWeight: '700', color: '#4B5563',
+        marginBottom: 8, marginTop: 18,
+    },
+    input: {
+        backgroundColor: '#FFF', borderRadius: 14, padding: 14,
+        fontSize: 15, color: '#1E1B4B', borderWidth: 1, borderColor: '#E5E7EB',
+    },
+    textArea:  { height: 120, textAlignVertical: 'top' },
+    charCount: { fontSize: 11, color: '#9CA3AF', textAlign: 'right', marginTop: 4, fontWeight: '600' },
+
+    optionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    optionPill: {
+        flexDirection: 'row', alignItems: 'center',
+        paddingHorizontal: 14, paddingVertical: 9,
+        borderRadius: 22, backgroundColor: '#FFF',
+        borderWidth: 1.5, borderColor: '#E5E7EB',
+    },
+    optionPillText: { fontSize: 13, fontWeight: '600', color: '#6B7280', marginLeft: 5 },
+
+    /* Important toggle */
+    importantToggle: {
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: '#FFF', borderRadius: 14,
+        padding: 14, borderWidth: 1.5, borderColor: '#E5E7EB',
+    },
+    importantToggleActive: { borderColor: '#FCA5A5', backgroundColor: '#FFF5F5' },
+    importantToggleTitle: { fontSize: 14, fontWeight: '700', color: '#4B5563' },
+    importantToggleSub:   { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
+    toggleDot: {
+        width: 22, height: 22, borderRadius: 11,
+        backgroundColor: '#E5E7EB', borderWidth: 2, borderColor: '#D1D5DB',
+    },
+    toggleDotActive: { backgroundColor: '#EF4444', borderColor: '#EF4444' },
+
+    /* Submit */
+    submitBtn: {
+        backgroundColor: theme.colors.primary, borderRadius: 16,
+        paddingVertical: 16, alignItems: 'center', marginTop: 28,
+        shadowColor: theme.colors.primary,
+        shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5,
+    },
+    submitBtnText: { color: '#FFF', fontSize: 16, fontWeight: '800' },
+    cancelEditBtn: {
+        alignItems: 'center', paddingVertical: 14, marginTop: 10,
+        borderRadius: 14, borderWidth: 1.5, borderColor: '#E5E7EB',
+    },
+    cancelEditText: { color: '#6B7280', fontWeight: '700', fontSize: 14 },
+
+    /* Manage tab */
+    manageContainer: { paddingHorizontal: 20 },
+    searchWrapper: {
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: '#FFF', borderRadius: 16,
+        paddingHorizontal: 16, height: 50, marginBottom: 14,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05, shadowRadius: 5, elevation: 1,
+    },
+    searchInput: { flex: 1, marginLeft: 10, fontSize: 14, color: '#1F2937' },
+
+    miniFilter: {
+        paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+        backgroundColor: '#FFF', marginRight: 8,
+        borderWidth: 1.5, borderColor: '#E5E7EB',
+    },
+    miniFilterText: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
+
+    /* Notice card (manage tab) */
+
+});
