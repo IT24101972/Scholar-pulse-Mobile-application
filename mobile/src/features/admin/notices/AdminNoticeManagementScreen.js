@@ -17,3 +17,29 @@ const TYPE_OPTIONS = [
     { key: 'urgent',  label: 'Urgent',  icon: 'megaphone-outline',        color: '#EF4444' },
     { key: 'admin',   label: 'Admin',   icon: 'shield-checkmark-outline', color: '#F59E0B' },
 ];
+const FACULTY_COLORS = {
+    All:         '#0055FE',
+    Computing:   '#6366F1',
+    Business:    '#10B981',
+    Engineering: '#F59E0B',
+    Law:         '#EC4899',
+};
+
+const TYPE_COLORS = {
+    general: '#0055FE',
+    urgent:  '#EF4444',
+    event:   '#10B981',
+    admin:   '#F59E0B',
+};
+
+const getTimeAgo = (dateStr) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+};
+
+/* ── Component ─────────────────────────────────────────────────────── */
