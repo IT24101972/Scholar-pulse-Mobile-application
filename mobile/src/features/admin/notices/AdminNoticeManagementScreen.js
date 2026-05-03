@@ -695,4 +695,36 @@ const styles = StyleSheet.create({
     attachChipText: { fontSize: 11, fontWeight: '700', color: '#0055FE', marginLeft: 4 },
     timeText: { fontSize: 11, color: '#9CA3AF', fontWeight: '600' },
 
+    /* Image Picker */
+    imagePickerBtn: {
+        backgroundColor: '#FFF',
+        height: 180,
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: '#E5E7EB',
+        borderStyle: 'dashed',
+        overflow: 'hidden',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    imagePreview: { width: '100%', height: '100%' },
+    imagePlaceholder: { alignItems: 'center' },
+    imagePlaceholderText: { color: '#9CA3AF', marginTop: 8, fontWeight: '600' },
+    removeImageBtn: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        borderRadius: 14,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+
+    /* Empty */
+    emptySearch:     { alignItems: 'center', marginTop: 60 },
+    emptySearchText: { color: '#9CA3AF', marginTop: 12, fontSize: 15, fontWeight: '500' },
+
 });
