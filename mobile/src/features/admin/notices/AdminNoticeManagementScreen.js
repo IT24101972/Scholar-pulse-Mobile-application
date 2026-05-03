@@ -728,3 +728,5 @@ const styles = StyleSheet.create({
     emptySearchText: { color: '#9CA3AF', marginTop: 12, fontSize: 15, fontWeight: '500' },
 
 });
+
+export default AdminNoticeManagementScreen;
