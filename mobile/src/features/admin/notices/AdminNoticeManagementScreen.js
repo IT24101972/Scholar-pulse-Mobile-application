@@ -43,3 +43,515 @@ const getTimeAgo = (dateStr) => {
 };
 
 /* ── Component ─────────────────────────────────────────────────────── */
+const AdminNoticeManagementScreen = ({ navigation }) => {
+    const { token } = useContext(AuthContext);
+    const [activeTab,    setActiveTab]    = useState('add');
+    const [isLoading,    setIsLoading]    = useState(false);
+    const [notices,      setNotices]      = useState([]);
+    const [isEditing,    setIsEditing]    = useState(false);
+    const [editingId,    setEditingId]    = useState(null);
+    const [searchQuery,  setSearchQuery]  = useState('');
+    const [filterFaculty,setFilterFaculty]= useState('All');
+    const [selectedImage, setSelectedImage] = useState(null);
+
+    // Form state
+    const EMPTY_FORM = {
+        title:       '',
+        description: '',
+        faculty:     'All',
+        type:        'general',
+        isImportant: false,
+    };
+    const [formData, setFormData] = useState(EMPTY_FORM);
+
+    useEffect(() => {
+        if (activeTab === 'manage') fetchNotices();
+    }, [activeTab]);
+
+    /* ── Image helpers ──────────────────────────────────────────────── */
+    const pickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission Denied', 'Sorry, we need camera roll permissions to upload images!');
+            return;
+        }
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [16, 9],
+            quality: 1,
+        });
+        if (!result.canceled) {
+            setSelectedImage(result.assets[0].uri);
+        }
+    };
+
+    const getImageUrl = (url) => {
+        if (!url) return null;
+        if (url.startsWith('http') || url.startsWith('file')) return url;
+        const rootUrl = BASE_URL.replace('/api', '');
+        return `${rootUrl}${url}`;
+    };
+
+    /* ── API calls ──────────────────────────────────────────────────── */
+    const fetchNotices = async () => {
+        setIsLoading(true);
+        try {
+            const res = await axios.get(`${BASE_URL}/notices`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setNotices(res.data.data || []);
+        } catch (error) {
+            console.error('Error fetching notices:', error);
+            Alert.alert('Error', 'Could not load notices');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const prepareEdit = (notice) => {
+        setEditingId(notice._id);
+        setIsEditing(true);
+        setFormData({
+            title:       notice.title       || '',
+            description: notice.description || '',
+            faculty:     notice.faculty     || 'All',
+            type:        notice.type        || 'general',
+            isImportant: notice.isImportant || false,
+        });
+        setSelectedImage(notice.image || null);
+        setActiveTab('add');
+    };
+
+    const handleSave = async () => {
+        if (!formData.title.trim() || !formData.description.trim()) {
+            Alert.alert('Error', 'Title and Description are required');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            // Build a FormData payload so we match the upload middleware
+            const fData = new FormData();
+            fData.append('title',       formData.title.trim());
+            fData.append('description', formData.description.trim());
+            fData.append('faculty',     formData.faculty);
+            fData.append('type',        formData.type);
+            fData.append('isImportant', String(formData.isImportant));
+
+            // Handle image – only append as file if it's a new local pick
+            if (selectedImage && selectedImage.startsWith('file')) {
+                const filename = selectedImage.split('/').pop();
+                const match = /\.(\w+)$/.exec(filename);
+                const type = match ? `image/${match[1]}` : 'image';
+                fData.append('image', { uri: selectedImage, name: filename, type });
+            } else if (selectedImage) {
+                fData.append('image', selectedImage);
+            }
+
+            const headers = {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data',
+            };
+
+            if (isEditing) {
+                await axios.put(`${BASE_URL}/notices/${editingId}`, fData, { headers });
+                Alert.alert('Success', 'Notice updated successfully!');
+            } else {
+                await axios.post(`${BASE_URL}/notices`, fData, { headers });
+                Alert.alert('Success', 'Notice published successfully!');
+            }
+
+            resetForm();
+            setSelectedImage(null);
+            setActiveTab('manage');
+        } catch (error) {
+            console.error('Notice save error:', error);
+            const msg = error.response?.data?.message || 'Failed to save notice';
+            Alert.alert('Error', msg);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDelete = (id) => {
+        Alert.alert(
+            'Delete Notice',
+            'Are you sure you want to remove this notice?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await axios.delete(`${BASE_URL}/notices/${id}`, {
+                                headers: { Authorization: `Bearer ${token}` }
+                            });
+                            setNotices(prev => prev.filter(n => n._id !== id));
+                        } catch {
+                            Alert.alert('Error', 'Failed to delete notice');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const resetForm = () => {
+        setFormData(EMPTY_FORM);
+        setSelectedImage(null);
+        setIsEditing(false);
+        setEditingId(null);
+    };
+
+    /* ── Add / Edit Tab ─────────────────────────────────────────────── */
+    const renderAddTab = () => (
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+            <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
+
+                {/* Title */}
+                <Text style={styles.inputLabel}>Notice Title *</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="e.g. Examination Schedule Update"
+                    placeholderTextColor="#9CA3AF"
+                    value={formData.title}
+                    onChangeText={t => setFormData({ ...formData, title: t })}
+                />
+
+                {/* Type */}
+                <Text style={styles.inputLabel}>Notice Type *</Text>
+                <View style={styles.optionRow}>
+                    {TYPE_OPTIONS.map(opt => {
+                        const active = formData.type === opt.key;
+                        return (
+                            <TouchableOpacity
+                                key={opt.key}
+                                style={[
+                                    styles.optionPill,
+                                    active && { backgroundColor: opt.color, borderColor: opt.color }
+                                ]}
+                                onPress={() => setFormData({ ...formData, type: opt.key })}
+                            >
+                                <Ionicons
+                                    name={opt.icon}
+                                    size={14}
+                                    color={active ? '#FFF' : opt.color}
+                                />
+                                <Text style={[styles.optionPillText, active && { color: '#FFF' }]}>
+                                    {opt.label}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+
+                {/* Faculty */}
+                <Text style={styles.inputLabel}>Target Faculty *</Text>
+                <View style={styles.optionRow}>
+                    {FACULTIES.map(fac => {
+                        const active = formData.faculty === fac;
+                        const col    = FACULTY_COLORS[fac];
+                        return (
+                            <TouchableOpacity
+                                key={fac}
+                                style={[
+                                    styles.optionPill,
+                                    active && { backgroundColor: col, borderColor: col }
+                                ]}
+                                onPress={() => setFormData({ ...formData, faculty: fac })}
+                            >
+                                <Text style={[styles.optionPillText, active && { color: '#FFF' }]}>
+                                    {fac}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+
+                {/* Description */}
+                <Text style={styles.inputLabel}>Description *</Text>
+                <TextInput
+                    style={[styles.input, styles.textArea]}
+                    placeholder="Write the full notice content here…"
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    numberOfLines={5}
+                    value={formData.description}
+                    onChangeText={t => setFormData({ ...formData, description: t })}
+                />
+                <Text style={styles.charCount}>{formData.description.length} characters</Text>
+
+                {/* Cover Image */}
+                <Text style={styles.inputLabel}>Cover Image (optional)</Text>
+                <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImage}>
+                    {selectedImage ? (
+                        <View style={{ width: '100%', height: '100%' }}>
+                            <Image source={{ uri: getImageUrl(selectedImage) }} style={styles.imagePreview} />
+                            <TouchableOpacity
+                                style={styles.removeImageBtn}
+                                onPress={() => setSelectedImage(null)}
+                            >
+                                <Ionicons name="close-circle" size={28} color="#EF4444" />
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <View style={styles.imagePlaceholder}>
+                            <Ionicons name="camera-outline" size={32} color="#9CA3AF" />
+                            <Text style={styles.imagePlaceholderText}>Upload Notice Image</Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+
+                {/* Mark as Important */}
+                <Text style={styles.inputLabel}>Priority</Text>
+                <TouchableOpacity
+                    style={[
+                        styles.importantToggle,
+                        formData.isImportant && styles.importantToggleActive
+                    ]}
+                    onPress={() => setFormData({ ...formData, isImportant: !formData.isImportant })}
+                >
+                    <Ionicons
+                        name={formData.isImportant ? 'alert-circle' : 'alert-circle-outline'}
+                        size={20}
+                        color={formData.isImportant ? '#EF4444' : '#9CA3AF'}
+                    />
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={[styles.importantToggleTitle, formData.isImportant && { color: '#EF4444' }]}>
+                            {formData.isImportant ? 'Marked as Important' : 'Mark as Important'}
+                        </Text>
+                        <Text style={styles.importantToggleSub}>
+                            Displays a red banner at the top of the card
+                        </Text>
+                    </View>
+                    <View style={[styles.toggleDot, formData.isImportant && styles.toggleDotActive]} />
+                </TouchableOpacity>
+
+                {/* Submit */}
+                <TouchableOpacity
+                    style={[styles.submitBtn, isLoading && { opacity: 0.7 }]}
+                    onPress={handleSave}
+                    disabled={isLoading}
+                >
+                    {isLoading
+                        ? <ActivityIndicator color="#FFF" />
+                        : (
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons
+                                    name={isEditing ? 'save-outline' : 'paper-plane-outline'}
+                                    size={18}
+                                    color="#FFF"
+                                    style={{ marginRight: 8 }}
+                                />
+                                <Text style={styles.submitBtnText}>
+                                    {isEditing ? 'Update Notice' : 'Publish Notice'}
+                                </Text>
+                            </View>
+                        )
+                    }
+                </TouchableOpacity>
+
+                {isEditing && (
+                    <TouchableOpacity style={styles.cancelEditBtn} onPress={() => {
+                        resetForm();
+                        setActiveTab('manage');
+                    }}>
+                        <Text style={styles.cancelEditText}>Cancel Edit</Text>
+                    </TouchableOpacity>
+                )}
+
+                <View style={{ height: 110 }} />
+            </ScrollView>
+        </KeyboardAvoidingView>
+    );
+
+    /* ── Manage Tab ─────────────────────────────────────────────────── */
+    const renderManageTab = () => {
+        const filtered = notices.filter(n => {
+            const matchSearch = n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                n.description.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchFaculty = filterFaculty === 'All' || n.faculty === filterFaculty || n.faculty === 'All';
+            return matchSearch && matchFaculty;
+        });
+
+        return (
+            <ScrollView style={styles.manageContainer} showsVerticalScrollIndicator={false}>
+
+                {/* Search bar */}
+                <View style={styles.searchWrapper}>
+                    <Ionicons name="search-outline" size={20} color="#9CA3AF" />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search notices…"
+                        placeholderTextColor="#6B7280"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                    />
+                    {searchQuery !== '' && (
+                        <TouchableOpacity onPress={() => setSearchQuery('')}>
+                            <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                {/* Faculty filter pills */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
+                    {FACULTIES.map(fac => {
+                        const active = filterFaculty === fac;
+                        const col    = FACULTY_COLORS[fac];
+                        return (
+                            <TouchableOpacity
+                                key={fac}
+                                style={[
+                                    styles.miniFilter,
+                                    active && { backgroundColor: col, borderColor: col }
+                                ]}
+                                onPress={() => setFilterFaculty(fac)}
+                            >
+                                <Text style={[styles.miniFilterText, active && { color: '#FFF' }]}>{fac}</Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
+
+                {isLoading ? (
+                    <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 40 }} />
+                ) : filtered.length > 0 ? (
+                    filtered.map(notice => {
+                        const typeColor   = TYPE_COLORS[notice.type]   || theme.colors.primary;
+                        const facultyColor = FACULTY_COLORS[notice.faculty] || theme.colors.primary;
+                        return (
+                            <View key={notice._id} style={styles.noticeCard}>
+                                {/* Top Row – badges + actions */}
+                                <View style={styles.noticeCardTop}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                        <View style={[styles.typeBadge, { backgroundColor: typeColor + '18' }]}>
+                                            <Text style={[styles.typeBadgeText, { color: typeColor }]}>
+                                                {notice.type.toUpperCase()}
+                                            </Text>
+                                        </View>
+                                        {notice.faculty !== 'All' && (
+                                            <View style={[styles.facBadge, { backgroundColor: facultyColor + '18' }]}>
+                                                <Text style={[styles.facBadgeText, { color: facultyColor }]}>
+                                                    {notice.faculty}
+                                                </Text>
+                                            </View>
+                                        )}
+                                        {notice.isImportant && (
+                                            <View style={styles.importantDot}>
+                                                <Ionicons name="alert-circle" size={12} color="#EF4444" />
+                                            </View>
+                                        )}
+                                    </View>
+                                    <View style={styles.cardActions}>
+                                        <TouchableOpacity
+                                            style={styles.miniActionBtn}
+                                            onPress={() => prepareEdit(notice)}
+                                        >
+                                            <Ionicons name="create-outline" size={17} color="#4B5563" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.miniActionBtn, { marginLeft: 8 }]}
+                                            onPress={() => handleDelete(notice._id)}
+                                        >
+                                            <Ionicons name="trash-outline" size={17} color="#EF4444" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                {/* Title & desc */}
+                                <Text style={styles.noticeCardTitle} numberOfLines={2}>
+                                    {notice.title}
+                                </Text>
+                                <Text style={styles.noticeCardDesc} numberOfLines={2}>
+                                    {notice.description}
+                                </Text>
+
+                                {/* Footer */}
+                                <View style={styles.noticeCardFooter}>
+                                    {notice.attachment ? (
+                                        <View style={styles.attachChip}>
+                                            <Ionicons name="attach" size={12} color={theme.colors.primary} />
+                                            <Text style={styles.attachChipText}>Attachment</Text>
+                                        </View>
+                                    ) : <View />}
+                                    <Text style={styles.timeText}>{getTimeAgo(notice.createdAt)}</Text>
+                                </View>
+                            </View>
+                        );
+                    })
+                ) : (
+                    <View style={styles.emptySearch}>
+                        <Ionicons name="search-outline" size={48} color="#E5E7EB" />
+                        <Text style={styles.emptySearchText}>No notices found</Text>
+                    </View>
+                )}
+
+                <View style={{ height: 110 }} />
+            </ScrollView>
+        );
+    };
+
+    /* ── Root Render ────────────────────────────────────────────────── */
+    return (
+        <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.managementHeader}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                    <Ionicons name="arrow-back" size={24} color="#1E1B4B" />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.headerTitle}>Notices Management</Text>
+                    <Text style={styles.headerSub}>
+                        {notices.length} notice{notices.length !== 1 ? 's' : ''} published
+                    </Text>
+                </View>
+            </View>
+
+            {/* Toggle */}
+            <View style={styles.toggleWrapper}>
+                <View style={styles.toggleBackground}>
+                    <TouchableOpacity
+                        style={[styles.toggleOption, activeTab === 'add' && styles.toggleOptionActive]}
+                        onPress={() => {
+                            if (!isEditing) resetForm();
+                            setActiveTab('add');
+                        }}
+                    >
+                        <Ionicons
+                            name={isEditing ? 'create-outline' : 'add-circle-outline'}
+                            size={16}
+                            color={activeTab === 'add' ? theme.colors.primary : '#6B7280'}
+                            style={{ marginRight: 6 }}
+                        />
+                        <Text style={[styles.toggleText, activeTab === 'add' && styles.toggleTextActive]}>
+                            {isEditing ? 'Edit Notice' : 'Add Notice'}
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.toggleOption, activeTab === 'manage' && styles.toggleOptionActive]}
+                        onPress={() => setActiveTab('manage')}
+                    >
+                        <Ionicons
+                            name="list-outline"
+                            size={16}
+                            color={activeTab === 'manage' ? theme.colors.primary : '#6B7280'}
+                            style={{ marginRight: 6 }}
+                        />
+                        <Text style={[styles.toggleText, activeTab === 'manage' && styles.toggleTextActive]}>
+                            Manage Notices
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            {activeTab === 'add' ? renderAddTab() : renderManageTab()}
+        </View>
+    );
+};
